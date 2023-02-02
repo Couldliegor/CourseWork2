@@ -8,17 +8,20 @@ import java.util.Map;
 import java.util.Objects;
 
 public class WeeklyServerTypeCollection {
-    public static Map<Integer, Weekly> weeklyMap= new LinkedHashMap<>();
+    public static Map<Integer, Weekly> weeklyMap = new LinkedHashMap<>();
     private Integer id;
-    protected void newObjectInCollection(Integer id, Weekly taskName){
+
+    protected void newObjectInCollection(Integer id, Weekly taskName) {
         weeklyMap.put(id, taskName);
         this.id = id;
     }
+
     public static void getAllTasksInMapToString() {
         for (Map.Entry<Integer, ForWeekly.Weekly> integerWeeklyEntry : weeklyMap.entrySet()) {
             System.out.println("\nid (Номер): " + integerWeeklyEntry.getKey() + "\nНазвание задачи: " + integerWeeklyEntry.getValue().getTaskName());
         }
     }
+
     public static String getNameForKey(int num) {
         return weeklyMap.get(num).getTaskName();
     }

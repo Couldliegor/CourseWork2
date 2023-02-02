@@ -6,5 +6,6 @@ import java.util.LinkedList;
 
 public interface NextInformationAboutNextTaskDo {
     public LocalDateTime getNextData(LocalDateTime dataTime);
+
     LinkedList<Date> listForData = new LinkedList<>();
 }

@@ -2,9 +2,10 @@ package ForWeekly.WeeklyRepeatTypes;
 
 import java.time.LocalDateTime;
 
-public class EveryDay implements NextInformationAboutNextTaskDo{
+public class EveryDay implements NextInformationAboutNextTaskDo {
 
     private String name = "Ежедневная";
+
     public String getName() {
         return name;
     }

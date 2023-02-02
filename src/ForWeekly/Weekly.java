@@ -16,6 +16,7 @@ public class Weekly extends WeeklyServerTypeCollection { //абстрактны�
     LinkedList<LocalDateTime> linkedTaskTime = new LinkedList<>(); // можно использовать в последствии для удаления (старых) дат.
 
     private final LocalDateTime taskTime;
+
     public Weekly(String taskName, String taskText, Integer taskType, Object taskRepeatingType, LocalDateTime taskTime) {
         this.taskName = taskName;
         this.taskText = taskText;
