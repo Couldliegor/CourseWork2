@@ -1,23 +1,30 @@
-import ForWeekly.DeletedList;
-import ForWeekly.Exception.NoTasksException;
-import ForWeekly.Exception.TaskNotFoundException;
-import ForWeekly.Weekly;
-import ForWeekly.WeeklyRepeatTypes.*;
-import ForWeekly.WeeklyServerTypeCollection;
+import Model.*;
 
+import Exception.IncorrectArgumenException;
+import Exception.TaskNotFoundException;
+import Service.TaskService;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.Scanner;
 import java.util.regex.Pattern;
 
-import static ForWeekly.WeeklyServerTypeCollection.*;
-
 public class Main {
 
-    private static final Pattern DATE_TIME_PATTERN = Pattern.compile("\\d{2}\\.\\d{2}\\.\\d{4} \\d{2}\\:\\d{2}");
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+    private static final TaskService taskService = new TaskService();
+
+    private static final Pattern DATE_TIME_PATTERN =
+            Pattern.compile("\\d{2}\\.\\d{2}\\.\\d{4} \\d{2}\\:\\d{2}");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+
+    private static final Pattern DATE_PATTERN = Pattern.compile("\\d{2}\\.\\d{2}\\.\\d{4}");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     public static void main(String[] args) {
+
         try (Scanner scanner = new Scanner(System.in)) {
             label:
             while (true) {
@@ -30,186 +37,179 @@ public class Main {
                             inputTask(scanner);
                             break;
                         case 2:
-                            removeTask(scanner);
+                            removeTasks(scanner);
                             break;
                         case 3:
-                            getTaskForTheDay(scanner);
+                            printTaskByDay(scanner);
                             break;
                         case 4:
-                            getMapOfDeletedTasks();
+                            taskService.printDeleteTask();
                             break;
                         case 0:
                             break label;
-                        default:
-                            throw new IllegalArgumentException("Неправильно введены данные");
                     }
                 } else {
                     scanner.next();
                     System.out.println("Выберите пункт меню из списка!");
                 }
             }
-        } catch (TaskNotFoundException e) {
-            throw new RuntimeException(e);
         }
     }
 
     private static void inputTask(Scanner scanner) {
         scanner.useDelimiter("\n");
-        Scanner scanner1 = new Scanner(System.in);
-        System.out.print("Введите название задачи: ");
-        String taskName = scanner1.nextLine();
 
-        System.out.println("Введите текст задачи: ");
-        String taskText = scanner1.nextLine();
+        String heading = inputTasktitleOfTask(scanner);
+        String description = inputTaskDescription(scanner);
+        TaskType type = inputTaskType(scanner);
+        LocalDateTime taskTime = inputTaskTime(scanner);
+        int repeatability = inputRepeatability(scanner);
 
-        System.out.println("Введите тип задачи: ");
-        System.out.println("1. Личная");
-        System.out.println("2. Рабочая");
-        Integer taskType = scanner.nextInt();
-
-        System.out.println("Введите признак повторяемости задачи!");
-        System.out.println("1. Однократная");
-        System.out.println("2. Ежедневная");
-        System.out.println("3. Еженедельная");
-        System.out.println("4. Ежемесячная");
-        System.out.println("5. Ежегодная");
-        Integer taskRepeatingType = scanner.nextInt();
-
-        //
-        System.out.println("Введите дату и время задачи в формате dd.MM.yyyy HH:mm");
-        LocalDateTime taskTime = null;
-        if (scanner.hasNext(DATE_TIME_PATTERN)) {
-            String dateTime = scanner.next(DATE_TIME_PATTERN);
-            taskTime = LocalDateTime.parse(dateTime, DATE_TIME_FORMATTER);
-        } else {
-            System.out.println("Введите дату и время задачи в формате dd.MM.yyyy HH:mm");
-            scanner.close();
-        }
-        if (taskTime == null) {
-            System.out.println("Введите дату и время задачи в формате dd.MM.yyyy HH:mm");
-            scanner.close();
-        }
-        //
-
-        ifsForWeeklyRepeatTypes(taskRepeatingType);
-        creatingObjectsMethod(taskName, taskText, taskType, ifsForWeeklyRepeatTypes(taskRepeatingType), taskTime); // добавить LocalDateTime
+        createTask(heading, description, type, taskTime, repeatability);
     }
 
-    public static void removeTask(Scanner scanner) throws TaskNotFoundException {
+    private static void removeTasks(Scanner scanner) {
+        System.out.println("Введите id задачи для удаления");
+        int id = scanner.nextInt();
+
         try {
-            WeeklyServerTypeCollection.ifThrowException();
-        } catch (NoTasksException e) {
-            throw new RuntimeException(e);
+            taskService.removeTask(id);
+        } catch (TaskNotFoundException e) {
+            System.out.println(e.getMessage());
         }
-
-        System.out.println("Введите id задачи, которую вы хотите удалить: ");
-        WeeklyServerTypeCollection.getAllTasksInMapToString();
-        int scan = scanner.nextInt();
-        System.out.println("Удаляю задачу с именем " + getNameForKey(scan));
-        removeTaskInMap(scan);
-        System.out.println("Задача успешно удалена!\n");
     }
 
-    public static void getMapOfDeletedTasks() {
-        System.out.println("Список удаленных задач: ");
-        DeletedList.getListOfDeletedWeeklyMap();
-    }
+    private static void printTaskByDay(Scanner scanner) {
+        System.out.println("Введите дату  задачи в формате dd.MM.yyyy");
 
-    public static void getTaskForTheDay(Scanner scanner) {
-        try {
-            WeeklyServerTypeCollection.ifThrowException();
-        } catch (NoTasksException e) {
-            throw new RuntimeException(e);
-        }
-        System.out.println("Укажите дату для получения задачи!");
-        LocalDateTime taskTime1 = null;
-        if (scanner.hasNext(DATE_TIME_PATTERN)) {
-            String dateTime = scanner.next(DATE_TIME_PATTERN);
-            taskTime1 = LocalDateTime.parse(dateTime, DATE_TIME_FORMATTER);
-        } else {
-            System.out.println("Введите дату и время задачи в формате dd.MM.yyyy HH:mm");
-            scanner.close();
-        }
-        if (taskTime1 == null) {
-            System.out.println("Введите дату и время задачи в формате dd.MM.yyyy HH:mm");
-            scanner.close();
-        }
-        returningInfoIfDateEquals(taskTime1);
-        // он также доллжен выводить имена конкретных заданий под эту дату.
-    }
+        if (scanner.hasNext(DATE_PATTERN)) {
+            String dateTime = scanner.next(DATE_PATTERN);
+            LocalDate inputDate = LocalDate.parse(dateTime, DATE_FORMATTER);
 
-    public static void returningInfoIfDateEquals(LocalDateTime taskTime1) {
-        int maxCountingValue = 200;
-        for (Weekly value : weeklyMap.values()) {
-            if (taskTime1.isAfter(value.getTaskTime()) || taskTime1.equals(value.getTaskTime())) {
-                if (value.getTaskRepeatingType().getClass().equals(Single.class)) {
-                    value.getTaskTime().equals(taskTime1);
-                    System.out.println(value);
-                } else if (value.getTaskRepeatingType().getClass().equals(EveryDay.class)) {
-                    if (taskTime1.isAfter(value.getTaskTime())) {
-                        System.out.println(value);
-                    }
-                } else if (value.getTaskRepeatingType().getClass().equals(EveryWeek.class)) {
-                    for (int i = 0; i < maxCountingValue; i++) {
-                        if (value.getTaskTime().plusWeeks(i).equals(taskTime1)) {
-                            System.out.println(value.toString());
-                        }
-                    }
-                } else if (value.getTaskRepeatingType().getClass().equals(EveryMonth.class)) {
-                    for (int i = 0; i < maxCountingValue; i++) {
-                        if (value.getTaskTime().plusMonths(i).equals(taskTime1)) {
-                            System.out.println(value.toString());
-                        }
-                    }
-                } else if (value.getTaskRepeatingType().getClass().equals(EveryYear.class)) {
-                    for (int i = 0; i < maxCountingValue; i++) {
-                        if (value.getTaskTime().plusYears(i).equals(taskTime1)) {
-                            System.out.println(value.toString());
-                        }
-                    }
-                } else try {
-                    throw new TaskNotFoundException("Задача с такой датой не найдена");
-                } catch (TaskNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
+            Collection<Task> taskByDay = taskService.getAllByDate(inputDate);
+
+            for (Task task : taskByDay) {
+                System.out.println(task);
             }
+        } else {
+            System.out.println("Введите дату и время задачи в формате dd.MM.yyyy");
+            scanner.close();
         }
     }
 
-    public static void creatingObjectsMethod(String taskName, String taskText, Integer taskType, Object taskRepeatingType, LocalDateTime taskTime) { // можно сделать несколько таких методов для работы
-        Weekly newWeekly = new Weekly(taskName, taskText, taskType, taskRepeatingType, taskTime);
+    private static String inputTasktitleOfTask(Scanner scanner) {
+        System.out.println("Введите название задачи ");
+        String titleOfTask = scanner.next();
+
+        if (titleOfTask.isBlank()) {
+            System.out.println("Необходимо ввести название!");
+            scanner.close();
+        }
+        return titleOfTask;
+    }
+
+    private static String inputTaskDescription(Scanner scanner) {
+        System.out.println("Введите описание задачи ");
+        String description = scanner.next();
+
+        if (description.isBlank()) {
+            System.out.println("Необходимо ввести описание задачи!");
+            scanner.close();
+        }
+        return description;
+    }
+
+    private static TaskType inputTaskType(Scanner scanner) {
+        System.out.println("Введите тип задачи: \n 1 - личная, \n 2 - рабочая: ");
+        TaskType type;
+
+        int taskTypeChoice = scanner.nextInt();
+
+        switch (taskTypeChoice) {
+            case 1:
+                type = TaskType.PERSONAL_TASK;
+                break;
+            case 2:
+                type = TaskType.WORK_TASK;
+                break;
+            default:
+                System.out.println("Данные введены некорректно, назначена личная задача по умолчанию");
+                type = TaskType.PERSONAL_TASK;
+                break;
+        }
+        return type;
+    }
+
+    private static LocalDateTime inputTaskTime(Scanner scanner) {
+        System.out.println("Введите дату и время задачи в формате dd.MM.yyyy HH:mm");
+
+
+        if (scanner.hasNext(DATE_TIME_PATTERN)) {
+            String dateTime = scanner.next(DATE_TIME_PATTERN);
+            return LocalDateTime.parse(dateTime, DATE_TIME_FORMATTER);
+        } else {
+            System.out.println("Введите дату и время задачи в формате dd.MM.yyyy HH:mm");
+            scanner.close();
+            return null;
+        }
+    }
+
+    private static int inputRepeatability(Scanner scanner) {
+        System.out.println("Введите повторяемые задачи: (1 - однократно, 2 - каждый день, " +
+                           "3 - каждую неделю, 4 - каждый месяц, 5 каждый год):");
+
+        if (scanner.hasNextInt()) {
+            return scanner.nextInt();
+        } else {
+            System.out.println("Введите числом повторяемость задачи");
+            scanner.close();
+        }
+        return -1;
+    }
+
+    private static void createTask(String heading, String description,
+                                   TaskType type, LocalDateTime taskTime, int repeatability) {
+
+        Task task = null;
+        try {
+            switch (repeatability) {
+                case 1:
+                    task = new SingleTime(heading, description, type, taskTime);
+                    break;
+                case 2:
+                    task = new DailyTask(heading, description, type, taskTime);
+                    break;
+                case 3:
+                    task = new WeekTask(heading, description, type, taskTime);
+                    break;
+                case 4:
+                    task = new MonthlyTask(heading, description, type, taskTime);
+                    break;
+                case 5:
+                    task = new YearlyTask(heading, description, type, taskTime);
+                    break;
+                default:
+                    System.out.println("Повторяемость задачи введена некорректно");
+            }
+        } catch (IncorrectArgumenException e) {
+            System.out.println(e.getMessage());
+        }
+
+        if (task != null) {
+            taskService.addTask(task);
+            System.out.println("Задача добавлена - " + task.getHeading());
+        } else {
+            System.out.println("Введены некорректные данные по задаче");
+        }
     }
 
     private static void printMenu() {
         System.out.println(
-                "1. Добавить задачу\n" +
+                "1. Добавить задачу \n" +
                 "2. Удалить задачу\n" +
-                "3. Получить задачу на указанный день\n" +
-                "4. Получить удаленные задачи\n" +
+                "3. Показать задачи на указанный день\n" +
+                "4. Посмотреть удаленные задачи\n" +
                 "0. Выход\n"
         );
-    }
-
-    //
-    public static Object ifsForWeeklyRepeatTypes(int taskRepeatingTypes) {
-        switch (taskRepeatingTypes) {
-            case 1:
-                Single type1 = new Single();
-                return type1;
-            case 2:
-                EveryDay type2 = new EveryDay();
-                return type2;
-            case 3:
-                EveryWeek type3 = new EveryWeek();
-                return type3;
-            case 4:
-                EveryMonth type4 = new EveryMonth();
-                return type4;
-            case 5:
-                EveryYear type5 = new EveryYear();
-                return type5;
-            default:
-                throw new RuntimeException("Что - то пошло не так!");
-        }
     }
 }
